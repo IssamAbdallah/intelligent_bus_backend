@@ -1,10 +1,15 @@
-const mongoose = require("mongoose"); // Mongoose pour définir des schémas et modèles MongoDB.
+const mongoose = require('mongoose');
 
-const BusSchema = new mongoose.Schema({
-    number: { type: String, required: true },
-    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Référence à l'utilisateur
-    capacity: { type: Number, required: true },
-    route: { type: String, required: true }
-}, { timestamps: true }); // Crée un nouveau schéma Mongoose nommé BusSchema pour définir la structure des documents "Bus".
+const busSchema = new mongoose.Schema({
+  busId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  capacity: { type: Number, required: true },
+  location: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    lastUpdated: { type: Date, default: Date.now },
+  },
+  createdAt: { type: Date, default: Date.now },
+});
 
-module.exports = mongoose.model("Bus", BusSchema);
+module.exports = mongoose.model('Bus', busSchema);

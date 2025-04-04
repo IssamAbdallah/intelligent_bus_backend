@@ -1,10 +1,11 @@
-const mongoose = require("mongoose"); // Mongoose pour travailler avec MongoDB.
+const mongoose = require('mongoose');
 
-const UserSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ["admin", "parent", "driver"]} // Ajoute un rôle
-}, { timestamps: true }); // Crée un nouveau schéma Mongoose nommé UserSchema pour définir la structure des documents "User".
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true }, // Hashé avec bcrypt
+  role: { type: String, enum: ['admin', 'parent']},
+  email: { type: String, required: true, unique: true }, // Ajout pour contact
+  createdAt: { type: Date, default: Date.now },
+});
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model('User', userSchema);

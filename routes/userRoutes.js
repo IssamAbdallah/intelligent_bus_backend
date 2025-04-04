@@ -1,99 +1,58 @@
-const express = require("express");
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const router = express.Router();
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
 
-dotenv.config();
+// Register
+router.post('/register', async (req, res) => {
+  const { username, password, email, role } = req.body;
 
-// Route d'inscription
-router.post("/register", async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body;
-
-        // Vérifier si l'utilisateur existe déjà
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: "Utilisateur déjà inscrit" });
-        }
-
-        // Vérifier que le rôle est valide
-        const validRoles = ["admin", "parent", "driver"];
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({ message: "Rôle invalide" });
-        }
-
-        // Hasher le mot de passe
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Créer un nouvel utilisateur
-        const user = new User({
-            name,
-            email,
-            password: hashedPassword,
-            role
-        });
-
-        await user.save();
-        res.status(201).json({ message: "Utilisateur créé avec succès" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Erreur serveur" });
+  try {
+    // Vérifie si l'utilisateur existe déjà
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Utilisateur ou email déjà pris' });
     }
+
+    // Accepter le rôle envoyé, avec "parent" par défaut si non spécifié
+    const userRole = role || 'parent'; // Changement ici : plus de restriction sur "admin"
+
+    // Hash du mot de passe
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Création de l'utilisateur
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      email,
+      role: userRole,
+    });
+    await newUser.save();
+
+    // Génération du token JWT
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(201).json({ token, user: { id: newUser._id, username, role: newUser.role } });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l’inscription', error });
+  }
 });
 
-// Route de connexion
-router.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
+// Login (inchangé)
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
 
-        // Vérifier si l'utilisateur existe
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: "Utilisateur non trouvé" });
-        }
-
-        // Vérifier le mot de passe
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Mot de passe incorrect" });
-        }
-
-        // Générer un token JWT
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-        res.json({ token, user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Erreur serveur" });
+  try {
+    const user = await User.findOne({ username });
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ message: 'Identifiants incorrects' });
     }
-});
 
-// Route pour mettre à jour le rôle d'un utilisateur
-router.put("/update-role/:id", async (req, res) => {
-    try {
-        const { role } = req.body;
-
-        // Vérifier que le rôle est valide
-        const validRoles = ["admin", "parent", "driver"];
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({ message: "Rôle invalide" });
-        }
-
-        // Mettre à jour l'utilisateur
-        const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
-
-        if (!user) {
-            return res.status(404).json({ message: "Utilisateur non trouvé" });
-        }
-
-        res.json({ message: "Rôle mis à jour avec succès", user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: user._id, username, role: user.role } });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la connexion', error });
+  }
 });
 
 module.exports = router;

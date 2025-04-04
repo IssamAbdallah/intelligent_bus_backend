@@ -1,39 +1,43 @@
-const express = require("express");
-const router = express.Router(); // Crée un routeur Express pour organiser les routes liées aux bus.
-const Bus = require("../models/Bus"); // Importe le modèle Bus défini dans "../models/Bus" pour interagir avec la collection des bus.
-const { verifyToken } = require("../middleware/authMiddleware"); // Importe la fonction verifyToken depuis un middleware d'authentification pour protéger les routes.
+const express = require('express');
+const Bus = require('../models/Bus');
+const { isAdmin } = require('../middleware/auth');
+const router = express.Router();
 
-// Ajouter un bus
-router.post("/", verifyToken, async (req, res) => {
-    try {
-        const { number, driver, capacity, route } = req.body;
-        
-        // Créer un nouveau bus
-        const bus = new Bus({
-            number,
-            driver,
-            capacity,
-            route
-        });
-
-        // Sauvegarder le bus dans la base de données
-        await bus.save();
-        res.status(201).json({ message: "Bus ajouté avec succès", bus });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
+// Ajouter un bus (admin uniquement)
+router.post('/add', isAdmin, async (req, res) => {
+  const { busId, name, capacity } = req.body;
+  try {
+    const newBus = new Bus({ busId, name, capacity });
+    await newBus.save();
+    res.status(201).json(newBus);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l’ajout du bus', error });
+  }
 });
 
-// Récupérer tous les bus
-router.get("/", verifyToken, async (req, res) => {
-    try {
-        const buses = await Bus.find().populate("driver", "name email role"); // Populate pour récupérer les infos du driver
-        res.status(200).json(buses); // envoie une réponse avec statut 200 (OK) et la liste des bus en JSON.
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
+// Lister tous les bus (admin uniquement)
+router.get('/', isAdmin, async (req, res) => {
+  const buses = await Bus.find();
+  res.json(buses);
 });
 
-module.exports = router; // Exporte le routeur pour qu'il puisse être utilisé dans l'application principale
+// Modifier un bus (admin uniquement)
+router.put('/:id', isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+  try {
+    const updatedBus = await Bus.findByIdAndUpdate(id, updates, { new: true });
+    res.json(updatedBus);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour', error });
+  }
+});
+
+// Supprimer un bus (admin uniquement)
+router.delete('/:id', isAdmin, async (req, res) => {
+  const { id } = req.params;
+  await Bus.findByIdAndDelete(id);
+  res.json({ message: 'Bus supprimé' });
+});
+
+module.exports = router;
