@@ -2,33 +2,39 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
-// Inscription (déjà présente)
-router.post('/register', async (req, res) => {
-  const { username, password, email, role, cin, fcmToken } = req.body;
+// Créer un compte parent (par l’admin)
+router.post('/add-parent', isAdmin, async (req, res) => {
+  const { username, password, email, firstName, lastName, cin, fcmToken } = req.body;
 
   try {
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    // Vérifier si l’utilisateur ou l’email existe déjà
+    const existingUser = await User.findOne({ $or: [{ username }, { email }, { cin }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'Utilisateur ou email déjà pris' });
+      return res.status(400).json({ message: 'Utilisateur, email ou CIN déjà pris' });
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const newUser = new User({
+    const newParent = new User({
       username,
       password: hashedPassword,
       email,
-      role: role || 'parent',
+      role: 'parent', // Toujours parent
+      firstName,
+      lastName,
       cin,
       fcmToken,
     });
-    await newUser.save();
+    await newParent.save();
 
-    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(201).json({ token, user: { id: newUser._id, username, role: newUser.role, cin: newUser.cin } });
+    res.status(201).json({
+      message: 'Parent créé avec succès',
+      user: { id: newParent._id, username, email, role: newParent.role, firstName, lastName, cin }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de l’inscription', error });
+    res.status(500).json({ message: 'Erreur lors de la création du parent', error });
   }
 });
 
@@ -48,7 +54,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token, user: { id: user._id, username, role: user.role, cin: user.cin } });
+    res.json({ token, user: { id: user._id, username, role: user.role, firstName: user.firstName, lastName: user.lastName, cin: user.cin } });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la connexion', error });
   }

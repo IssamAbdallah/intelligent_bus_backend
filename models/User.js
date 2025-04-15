@@ -1,4 +1,3 @@
-// models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -6,16 +5,22 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   role: { type: String, enum: ['admin', 'parent'], default: 'parent' },
+  firstName: { 
+    type: String, 
+    required: function() { return this.role === 'parent'; } // Requis pour parents
+  }, // Prénom
+  lastName: { 
+    type: String, 
+    required: function() { return this.role === 'parent'; } // Requis pour parents
+  }, // Nom
   cin: { 
     type: String,
-    unique: true, // Unique si fourni
+    unique: true,
     validate: {
       validator: function(v) {
-        // Si role est "parent", cin doit être présent et avoir 8 chiffres
         if (this.role === 'parent') {
           return v && /^\d{8}$/.test(v);
         }
-        // Si role est "admin", cin est optionnel (peut être absent ou valide si présent)
         return v ? /^\d{8}$/.test(v) : true;
       },
       message: 'Le CIN doit être un numéro de 8 chiffres pour les parents et est optionnel pour les admins'
