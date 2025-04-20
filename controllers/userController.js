@@ -13,16 +13,16 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true, // Utilise le nouveau parser d'URL de MongoDB (option recommandée).
   useUnifiedTopology: true, // Utilise le nouveau moteur de gestion de topologie pour MongoDB.
 })
-.then(() => console.log("✅ Connecté à MongoDB"))
-.catch(err => console.log("❌ Erreur MongoDB :", err));
+.then(() => console.log("Connecté à MongoDB"))
+.catch(err => console.log("Erreur MongoDB :", err));
 
 // Route test
 app.get("/", (req, res) => {
-  res.send("🚀 Smart Bus Backend API fonctionne !");
+  res.send("Smart Bus Backend API fonctionne !");
 });
 
 // Lancer le serveur
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
 });

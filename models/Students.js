@@ -1,7 +1,18 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
-  studentId: { type: String, required: true, unique: true }, // Identifiant unique de l’élève
+  studentId: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    match: /^[A-Za-z0-9]{8,16}$/, // Ex. 8 à 16 caractères alphanumériques pour un code RFID
+    validate: {
+      validator: function(v) {
+        return /^[A-Za-z0-9]{8,16}$/.test(v);
+      },
+      message: 'Le code RFID doit être une chaîne alphanumérique de 8 à 16 caractères'
+    }
+  },
   name: { type: String, required: true },
   parentId: { 
     type: String, 

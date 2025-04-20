@@ -9,6 +9,13 @@ const busSchema = new mongoose.Schema({
     longitude: { type: Number },
     lastUpdated: { type: Date, default: Date.now },
   },
+  
+  driverId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Driver', 
+    default: null // Optionnel
+  },
+  
   createdAt: { type: Date, default: Date.now },
 });
 
