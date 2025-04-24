@@ -92,8 +92,10 @@ router.delete('/:id', isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Conducteur non trouvé' });
     }
 
-    // Vérifier si le conducteur est associé à un bus
-    const hasBus = await Bus.findOne({ driverId: req.params.id });
+    // Vérifier si le CIN du conducteur est associé à un bus comme driverId1 ou driverId2
+    const hasBus = await Bus.findOne({
+      $or: [{ driverId1: driver.cin }, { driverId2: driver.cin }],
+    });
     if (hasBus) {
       return res.status(400).json({ message: 'Impossible de supprimer : ce conducteur est associé à un bus' });
     }

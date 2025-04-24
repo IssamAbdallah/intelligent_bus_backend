@@ -10,10 +10,13 @@ const busSchema = new mongoose.Schema({
     lastUpdated: { type: Date, default: Date.now },
   },
   
-  driverId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Driver', 
-    default: null // Optionnel
+  driverId1: {
+    type: String, // Stocke le CIN du premier conducteur
+    required: true,
+  },
+  driverId2: {
+    type: String, // Stocke le CIN du second conducteur
+    default: null, // Optionnel
   },
   
   createdAt: { type: Date, default: Date.now },

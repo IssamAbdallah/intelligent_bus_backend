@@ -28,7 +28,7 @@ const upload = multer({
 
 // Ajouter un élève
 router.post('/add', isAdmin, upload.single('image'), async (req, res) => {
-  const { studentId, name, parentId, busId } = req.body;
+  const { studentId, name, niveau, parentId, busId } = req.body;
 
   try {
     const existingStudent = await Student.findOne({ studentId });
