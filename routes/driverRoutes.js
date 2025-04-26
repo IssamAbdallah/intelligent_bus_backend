@@ -1,108 +1,92 @@
 const express = require('express');
+const router = express.Router();
 const Driver = require('../models/Driver');
 const Bus = require('../models/Bus');
-const { isAdmin } = require('../middleware/auth');
-const router = express.Router();
+const { auth, isAdmin } = require('../middleware/auth');
 
-// Ajouter un conducteur
-router.post('/add', isAdmin, async (req, res) => {
-  const { firstName, lastName, email, cin, phoneNumber } = req.body;
-
+// Créer un conducteur (POST)
+router.post('/add', auth, isAdmin, async (req, res) => {
+  const { firstName, lastName, cin, phoneNumber } = req.body;
   try {
-    const existingDriver = await Driver.findOne({ $or: [{ email }, { cin }] });
+    const existingDriver = await Driver.findOne({ cin });
     if (existingDriver) {
-      return res.status(400).json({ message: 'Email ou CIN déjà pris' });
+      return res.status(400).json({ message: 'CIN déjà pris' });
     }
-
-    const newDriver = new Driver({
-      firstName,
-      lastName,
-      email,
-      cin,
-      phoneNumber,
-    });
-    await newDriver.save();
-
-    res.status(201).json({
-      message: 'Conducteur créé avec succès',
-      driver: { id: newDriver._id, firstName, lastName, email, cin, phoneNumber }
-    });
+    const driver = new Driver({ firstName, lastName, cin, phoneNumber });
+    await driver.save();
+    res.json({ message: 'Conducteur créé avec succès', driver });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création du conducteur', error });
+    console.error('Erreur add-driver:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la création du conducteur', error: error.message });
   }
 });
 
-// Récupérer la liste des conducteurs
-router.get('/', isAdmin, async (req, res) => {
+// Lister tous les conducteurs (GET)
+router.get('/', auth, isAdmin, async (req, res) => {
   try {
     const drivers = await Driver.find();
     res.json(drivers);
   } catch (error) {
+    console.error('Erreur get-drivers:', error.message);
     res.status(500).json({ message: 'Erreur lors de la récupération des conducteurs', error });
   }
 });
 
-// Modifier un conducteur
-router.put('/:id', isAdmin, async (req, res) => {
-  const { firstName, lastName, email, cin, phoneNumber } = req.body;
-
+// Récupérer un conducteur par ID (GET)
+router.get('/:id', auth, isAdmin, async (req, res) => {
   try {
     const driver = await Driver.findById(req.params.id);
     if (!driver) {
       return res.status(404).json({ message: 'Conducteur non trouvé' });
     }
-
-    const existingDriver = await Driver.findOne({
-      $or: [{ email }, { cin }],
-      _id: { $ne: req.params.id },
-    });
-    if (existingDriver) {
-      return res.status(400).json({ message: 'Email ou CIN déjà pris' });
-    }
-
-    driver.firstName = firstName || driver.firstName;
-    driver.lastName = lastName || driver.lastName;
-    driver.email = email || driver.email;
-    driver.cin = cin || driver.cin;
-    driver.phoneNumber = phoneNumber || driver.phoneNumber;
-
-    await driver.save();
-
-    res.json({
-      message: 'Conducteur mis à jour avec succès',
-      driver: {
-        id: driver._id,
-        firstName: driver.firstName,
-        lastName: driver.lastName,
-        email: driver.email,
-        cin: driver.cin,
-        phoneNumber: driver.phoneNumber,
-      },
-    });
+    res.json(driver);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour du conducteur', error });
+    console.error('Erreur get-driver:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la récupération du conducteur', error });
   }
 });
 
-// Supprimer un conducteur
-router.delete('/:id', isAdmin, async (req, res) => {
+// Modifier un conducteur (PUT)
+router.put('/:id', auth, isAdmin, async (req, res) => {
+  const { firstName, lastName, cin, phoneNumber } = req.body;
   try {
     const driver = await Driver.findById(req.params.id);
     if (!driver) {
       return res.status(404).json({ message: 'Conducteur non trouvé' });
     }
+    if (cin && cin !== driver.cin) {
+      const existingDriver = await Driver.findOne({ cin });
+      if (existingDriver) {
+        return res.status(400).json({ message: 'CIN déjà pris' });
+      }
+    }
+    driver.firstName = firstName || driver.firstName;
+    driver.lastName = lastName || driver.lastName;
+    driver.cin = cin || driver.cin;
+    driver.phoneNumber = phoneNumber || driver.phoneNumber;
+    await driver.save();
+    res.json({ message: 'Conducteur mis à jour avec succès', driver });
+  } catch (error) {
+    console.error('Erreur update-driver:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour du conducteur', error: error.message });
+  }
+});
 
-    // Vérifier si le CIN du conducteur est associé à un bus comme driverId1 ou driverId2
-    const hasBus = await Bus.findOne({
-      $or: [{ driverId1: driver.cin }, { driverId2: driver.cin }],
-    });
-    if (hasBus) {
+// Supprimer un conducteur (DELETE)
+router.delete('/:id', auth, isAdmin, async (req, res) => {
+  try {
+    const driver = await Driver.findById(req.params.id);
+    if (!driver) {
+      return res.status(404).json({ message: 'Conducteur non trouvé' });
+    }
+    const busWithDriver = await Bus.findOne({ $or: [{ driverId1: driver.cin }, { driverId2: driver.cin }] });
+    if (busWithDriver) {
       return res.status(400).json({ message: 'Impossible de supprimer : ce conducteur est associé à un bus' });
     }
-
     await driver.deleteOne();
     res.json({ message: 'Conducteur supprimé avec succès' });
   } catch (error) {
+    console.error('Erreur delete-driver:', error.message);
     res.status(500).json({ message: 'Erreur lors de la suppression du conducteur', error });
   }
 });

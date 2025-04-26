@@ -9,7 +9,6 @@ const busSchema = new mongoose.Schema({
     longitude: { type: Number },
     lastUpdated: { type: Date, default: Date.now },
   },
-  
   driverId1: {
     type: String, // Stocke le CIN du premier conducteur
     required: true,
@@ -18,7 +17,6 @@ const busSchema = new mongoose.Schema({
     type: String, // Stocke le CIN du second conducteur
     default: null, // Optionnel
   },
-  
   createdAt: { type: Date, default: Date.now },
 });
 

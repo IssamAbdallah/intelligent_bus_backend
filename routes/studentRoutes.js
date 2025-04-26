@@ -1,131 +1,117 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
+const router = express.Router();
 const Student = require('../models/Students');
 const User = require('../models/User');
-const { isAdmin } = require('../middleware/auth');
-const router = express.Router();
+const Bus = require('../models/Bus');
+const { auth, isAdmin } = require('../middleware/auth');
 
-// Configuration de multer pour l’upload d’images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'Uploads/'),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-    if (extname && mimetype) cb(null, true);
-    else cb(new Error('Seules les images JPEG/PNG sont acceptées'));
-  },
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
-
-// Ajouter un élève
-router.post('/add', isAdmin, upload.single('image'), async (req, res) => {
-  const { studentId, name, niveau, parentId, busId } = req.body;
-
+// Créer un élève (POST)
+router.post('/add', auth, isAdmin, async (req, res) => {
+  const { studentId, name, parentId, busId, imagePath } = req.body;
   try {
     const existingStudent = await Student.findOne({ studentId });
     if (existingStudent) {
-      return res.status(400).json({ message: 'Ce code RFID est déjà pris' });
+      return res.status(400).json({ message: 'ID étudiant (RFID) déjà pris' });
     }
-
-    const parent = await User.findOne({ cin: parentId });
+    const parent = await User.findOne({ cin: parentId, role: 'parent' });
     if (!parent) {
-      return res.status(404).json({ message: 'Parent avec ce CIN non trouvé' });
+      return res.status(404).json({ message: 'Parent non trouvé' });
     }
-
-    if (!req.file) {
-      return res.status(400).json({ message: 'Image requise pour la reconnaissance faciale' });
+    if (busId) {
+      const bus = await Bus.findById(busId);
+      if (!bus) {
+        return res.status(404).json({ message: 'Bus non trouvé' });
+      }
     }
-
-    const student = new Student({
-      studentId,
-      name,
-      parentId,
-      busId,
-      imagePath: req.file.path,
-    });
-
+    const student = new Student({ studentId, name, parentId, busId, imagePath });
     await student.save();
-    res.status(201).json(student);
+    res.json({ message: 'Élève créé avec succès', student });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de l’ajout de l’élève', error });
+    console.error('Erreur add-student:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la création de l\'élève', error });
   }
 });
 
-// Récupérer la liste des élèves
-router.get('/', isAdmin, async (req, res) => {
+// Lister tous les élèves (GET)
+router.get('/', auth, isAdmin, async (req, res) => {
   try {
-    const students = await Student.find()
-      .populate('parentId', 'firstName lastName cin')
-      .populate('busId', 'busId name');
+    const students = await Student.find().populate('busId', 'busId name');
     res.json(students);
   } catch (error) {
+    console.error('Erreur get-students:', error.message);
     res.status(500).json({ message: 'Erreur lors de la récupération des élèves', error });
   }
 });
 
-// Modifier un élève
-router.put('/:id', isAdmin, upload.single('image'), async (req, res) => {
-  const { studentId, name, parentId, busId } = req.body;
+// Récupérer un élève par ID (GET)
+router.get('/:id', auth, isAdmin, async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id).populate('busId', 'busId name');
+    if (!student) {
+      return res.status(404).json({ message: 'Élève non trouvé' });
+    }
+    res.json(student);
+  } catch (error) {
+    console.error('Erreur get-student:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la récupération de l\'élève', error });
+  }
+});
 
+// Modifier un élève (PUT)
+router.put('/:id', auth, isAdmin, async (req, res) => {
+  const { studentId, name, parentId, busId, imagePath } = req.body;
   try {
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'Élève non trouvé' });
     }
-
     if (studentId && studentId !== student.studentId) {
       const existingStudent = await Student.findOne({ studentId });
       if (existingStudent) {
-        return res.status(400).json({ message: 'Ce code RFID est déjà pris' });
+        return res.status(400).json({ message: 'ID étudiant (RFID) déjà pris' });
       }
     }
-
     if (parentId && parentId !== student.parentId) {
-      const parent = await User.findOne({ cin: parentId });
+      const parent = await User.findOne({ cin: parentId, role: 'parent' });
       if (!parent) {
-        return res.status(404).json({ message: 'Parent avec ce CIN non trouvé' });
+        return res.status(404).json({ message: 'Parent non trouvé' });
       }
     }
-
+    if (busId && busId !== student.busId) {
+      const bus = await Bus.findById(busId);
+      if (!bus) {
+        return res.status(404).json({ message: 'Bus non trouvé' });
+      }
+    }
     student.studentId = studentId || student.studentId;
     student.name = name || student.name;
     student.parentId = parentId || student.parentId;
     student.busId = busId || student.busId;
-    if (req.file) {
-      student.imagePath = req.file.path;
-    }
-
+    student.imagePath = imagePath || student.imagePath;
     await student.save();
-    res.json({
-      message: 'Élève mis à jour avec succès',
-      student,
-    });
+    res.json({ message: 'Élève mis à jour avec succès', student });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de l’élève', error });
+    console.error('Erreur update-student:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'élève', error });
   }
 });
 
-// Supprimer un élève
-router.delete('/:id', isAdmin, async (req, res) => {
+// Supprimer un élève (DELETE)
+router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
     if (!student) {
       return res.status(404).json({ message: 'Élève non trouvé' });
     }
-
+    const hasPresences = await Presence.findOne({ studentId: student._id });
+    if (hasPresences) {
+      return res.status(400).json({ message: 'Impossible de supprimer : cet élève a des présences associées' });
+    }
     await student.deleteOne();
     res.json({ message: 'Élève supprimé avec succès' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la suppression de l’élève', error });
+    console.error('Erreur delete-student:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la suppression de l\'élève', error });
   }
 });
 
