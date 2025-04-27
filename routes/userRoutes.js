@@ -6,6 +6,70 @@ const Student = require('../models/Students');
 const { auth, isAdmin } = require('../middleware/auth');
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/users/add-parent:
+ *   post:
+ *     summary: Créer un parent
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               cin:
+ *                 type: number
+ *               phoneNumber:
+ *                 type: number
+ *               fcmToken:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *               - email
+ *               - firstName
+ *               - lastName
+ *               - cin
+ *               - phoneNumber
+ *     responses:
+ *       201:
+ *         description: Parent créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Créer un compte parent (POST)
 router.post('/add-parent', auth, isAdmin, async (req, res) => {
   const { username, password, email, firstName, lastName, cin, phoneNumber, fcmToken } = req.body;
@@ -50,6 +114,52 @@ router.post('/add-parent', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/login:
+ *   post:
+ *     summary: Connexion d'un utilisateur
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       200:
+ *         description: Connexion réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Erreur de connexion
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 // Connexion (POST)
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -91,6 +201,30 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/parents:
+ *   get:
+ *     summary: Lister tous les parents
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des parents
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Récupérer la liste des parents (GET)
 router.get('/parents', auth, isAdmin, async (req, res) => {
   try {
@@ -102,6 +236,41 @@ router.get('/parents', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/parents/{id}:
+ *   get:
+ *     summary: Récupérer un parent par ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du parent
+ *     responses:
+ *       200:
+ *         description: Parent récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: Parent non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Récupérer un parent par ID (GET)
 router.get('/parents/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -116,6 +285,73 @@ router.get('/parents/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/parents/{id}:
+ *   put:
+ *     summary: Modifier un parent
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du parent
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               cin:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               fcmToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Parent mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Parent non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Modifier un parent (PUT)
 router.put('/parents/:id', auth, isAdmin, async (req, res) => {
   const { username, email, firstName, lastName, cin, phoneNumber, fcmToken } = req.body;
@@ -164,6 +400,50 @@ router.put('/parents/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/users/parents/{id}:
+ *   delete:
+ *     summary: Supprimer un parent
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du parent
+ *     responses:
+ *       200:
+ *         description: Parent supprimé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Impossible de supprimer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Parent non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Supprimer un parent (DELETE)
 router.delete('/parents/:id', auth, isAdmin, async (req, res) => {
   try {

@@ -27,7 +27,7 @@ const driverSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Ajouter un index sparse sur cin
-driverSchema.index({ cin: 1 }, { unique: true, sparse: true });
+// Index unique sur cin (sparse non nécessaire car cin est requis)
+driverSchema.index({ cin: 1 }, { unique: true });
 
 module.exports = mongoose.model('Driver', driverSchema);

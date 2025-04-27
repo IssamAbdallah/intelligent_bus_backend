@@ -5,6 +5,71 @@ const Driver = require('../models/Driver');
 const Student = require('../models/Students');
 const { auth, isAdmin } = require('../middleware/auth');
 
+/**
+ * @swagger
+ * /api/buses/add:
+ *   post:
+ *     summary: Créer un bus
+ *     tags: [Buses]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               busId:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               capacity:
+ *                 type: number
+ *               latitude:
+ *                 type: number
+ *               longitude:
+ *                 type: number
+ *               driverId1:
+ *                 type: string
+ *               driverId2:
+ *                 type: string
+ *             required:
+ *               - busId
+ *               - name
+ *               - capacity
+ *               - driverId1
+ *     responses:
+ *       200:
+ *         description: Bus créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 bus:
+ *                   $ref: '#/components/schemas/Bus'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Conducteur non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Créer un bus (POST)
 router.post('/add', auth, isAdmin, async (req, res) => {
   const { busId, name, capacity, latitude, longitude, driverId1, driverId2 } = req.body;
@@ -39,6 +104,30 @@ router.post('/add', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/buses:
+ *   get:
+ *     summary: Lister tous les bus
+ *     tags: [Buses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des bus
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Bus'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Lister tous les bus (GET)
 router.get('/', auth, isAdmin, async (req, res) => {
   try {
@@ -50,6 +139,41 @@ router.get('/', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/buses/{id}:
+ *   get:
+ *     summary: Récupérer un bus par ID
+ *     tags: [Buses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du bus
+ *     responses:
+ *       200:
+ *         description: Bus récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Bus'
+ *       404:
+ *         description: Bus non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Récupérer un bus par ID (GET)
 router.get('/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -64,6 +188,73 @@ router.get('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/buses/{id}:
+ *   put:
+ *     summary: Modifier un bus
+ *     tags: [Buses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du bus
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               busId:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               capacity:
+ *                 type: number
+ *               latitude:
+ *                 type: number
+ *               longitude:
+ *                 type: number
+ *               driverId1:
+ *                 type: string
+ *               driverId2:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Bus mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 bus:
+ *                   $ref: '#/components/schemas/Bus'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Bus ou conducteur non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Modifier un bus (PUT)
 router.put('/:id', auth, isAdmin, async (req, res) => {
   const { busId, name, capacity, latitude, longitude, driverId1, driverId2 } = req.body;
@@ -108,6 +299,50 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/buses/{id}:
+ *   delete:
+ *     summary: Supprimer un bus
+ *     tags: [Buses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du bus
+ *     responses:
+ *       200:
+ *         description: Bus supprimé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Impossible de supprimer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Bus non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Supprimer un bus (DELETE)
 router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {

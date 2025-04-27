@@ -4,6 +4,59 @@ const Driver = require('../models/Driver');
 const Bus = require('../models/Bus');
 const { auth, isAdmin } = require('../middleware/auth');
 
+/**
+ * @swagger
+ * /api/drivers/add:
+ *   post:
+ *     summary: Créer un conducteur
+ *     tags: [Drivers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               cin:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - cin
+ *               - phoneNumber
+ *     responses:
+ *       200:
+ *         description: Conducteur créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 driver:
+ *                   $ref: '#/components/schemas/Driver'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Créer un conducteur (POST)
 router.post('/add', auth, isAdmin, async (req, res) => {
   const { firstName, lastName, cin, phoneNumber } = req.body;
@@ -21,6 +74,30 @@ router.post('/add', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/drivers:
+ *   get:
+ *     summary: Lister tous les conducteurs
+ *     tags: [Drivers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des conducteurs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Driver'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Lister tous les conducteurs (GET)
 router.get('/', auth, isAdmin, async (req, res) => {
   try {
@@ -32,6 +109,41 @@ router.get('/', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/drivers/{id}:
+ *   get:
+ *     summary: Récupérer un conducteur par ID
+ *     tags: [Drivers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du conducteur
+ *     responses:
+ *       200:
+ *         description: Conducteur récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Driver'
+ *       404:
+ *         description: Conducteur non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Récupérer un conducteur par ID (GET)
 router.get('/:id', auth, isAdmin, async (req, res) => {
   try {
@@ -46,6 +158,67 @@ router.get('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/drivers/{id}:
+ *   put:
+ *     summary: Modifier un conducteur
+ *     tags: [Drivers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du conducteur
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               cin:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Conducteur mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 driver:
+ *                   $ref: '#/components/schemas/Driver'
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Conducteur non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Modifier un conducteur (PUT)
 router.put('/:id', auth, isAdmin, async (req, res) => {
   const { firstName, lastName, cin, phoneNumber } = req.body;
@@ -72,6 +245,50 @@ router.put('/:id', auth, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/drivers/{id}:
+ *   delete:
+ *     summary: Supprimer un conducteur
+ *     tags: [Drivers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID MongoDB du conducteur
+ *     responses:
+ *       200:
+ *         description: Conducteur supprimé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Impossible de supprimer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Conducteur non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Supprimer un conducteur (DELETE)
 router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {
