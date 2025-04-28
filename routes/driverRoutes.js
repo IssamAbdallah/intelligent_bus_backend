@@ -23,6 +23,8 @@ const { auth, isAdmin } = require('../middleware/auth');
  *                 type: string
  *               lastName:
  *                 type: string
+ *               email:
+ *                 type: string
  *               cin:
  *                 type: string
  *               phoneNumber:
@@ -30,6 +32,7 @@ const { auth, isAdmin } = require('../middleware/auth');
  *             required:
  *               - firstName
  *               - lastName
+ *               - email
  *               - cin
  *               - phoneNumber
  *     responses:
@@ -59,13 +62,13 @@ const { auth, isAdmin } = require('../middleware/auth');
  */
 // Créer un conducteur (POST)
 router.post('/add', auth, isAdmin, async (req, res) => {
-  const { firstName, lastName, cin, phoneNumber } = req.body;
+  const { firstName, lastName, email, cin, phoneNumber } = req.body;
   try {
-    const existingDriver = await Driver.findOne({ cin });
+    const existingDriver = await Driver.findOne({ cin }, { email });
     if (existingDriver) {
       return res.status(400).json({ message: 'CIN déjà pris' });
     }
-    const driver = new Driver({ firstName, lastName, cin, phoneNumber });
+    const driver = new Driver({ firstName, lastName, email, cin, phoneNumber });
     await driver.save();
     res.json({ message: 'Conducteur créé avec succès', driver });
   } catch (error) {
@@ -184,6 +187,8 @@ router.get('/:id', auth, isAdmin, async (req, res) => {
  *                 type: string
  *               lastName:
  *                 type: string
+ *               email:
+ *                 type: string
  *               cin:
  *                 type: string
  *               phoneNumber:
@@ -221,20 +226,21 @@ router.get('/:id', auth, isAdmin, async (req, res) => {
  */
 // Modifier un conducteur (PUT)
 router.put('/:id', auth, isAdmin, async (req, res) => {
-  const { firstName, lastName, cin, phoneNumber } = req.body;
+  const { firstName, lastName, email, cin, phoneNumber } = req.body;
   try {
     const driver = await Driver.findById(req.params.id);
     if (!driver) {
       return res.status(404).json({ message: 'Conducteur non trouvé' });
     }
     if (cin && cin !== driver.cin) {
-      const existingDriver = await Driver.findOne({ cin });
+      const existingDriver = await Driver.findOne({ cin } , { email });
       if (existingDriver) {
         return res.status(400).json({ message: 'CIN déjà pris' });
       }
     }
     driver.firstName = firstName || driver.firstName;
     driver.lastName = lastName || driver.lastName;
+    driver.email = email || driver.email;
     driver.cin = cin || driver.cin;
     driver.phoneNumber = phoneNumber || driver.phoneNumber;
     await driver.save();

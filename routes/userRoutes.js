@@ -8,6 +8,93 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/users/login:
+ *   post:
+ *     summary: Connexion d'un utilisateur
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       200:
+ *         description: Connexion réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Erreur de connexion
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+// Connexion (POST)
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Mot de passe incorrect' });
+    }
+
+    const tokenOptions = user.role === 'admin' ? { expiresIn: '30m' } : {};
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      tokenOptions
+    );
+    console.log('Token généré pour', username, ':', { id: user._id, role: user.role });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        cin: user.cin,
+        phoneNumber: user.phoneNumber,
+        fcmToken: user.fcmToken,
+      },
+    });
+  } catch (error) {
+    console.error('Erreur login:', error.message);
+    res.status(500).json({ message: 'Erreur lors de la connexion', error });
+  }
+});
+
+/**
+ * @swagger
  * /api/users/add-parent:
  *   post:
  *     summary: Créer un parent
@@ -111,93 +198,6 @@ router.post('/add-parent', auth, isAdmin, async (req, res) => {
   } catch (error) {
     console.error('Erreur add-parent:', error.message);
     res.status(500).json({ message: 'Erreur lors de la création du parent', error: error.message });
-  }
-});
-
-/**
- * @swagger
- * /api/users/login:
- *   post:
- *     summary: Connexion d'un utilisateur
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       200:
- *         description: Connexion réussie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Erreur de connexion
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-// Connexion (POST)
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ message: 'Utilisateur non trouvé' });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Mot de passe incorrect' });
-    }
-
-    const tokenOptions = user.role === 'admin' ? { expiresIn: '30m' } : {};
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      tokenOptions
-    );
-    console.log('Token généré pour', username, ':', { id: user._id, role: user.role });
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        username,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        cin: user.cin,
-        phoneNumber: user.phoneNumber,
-        fcmToken: user.fcmToken,
-      },
-    });
-  } catch (error) {
-    console.error('Erreur login:', error.message);
-    res.status(500).json({ message: 'Erreur lors de la connexion', error });
   }
 });
 

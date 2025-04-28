@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const driverSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   cin: {
     type: String,
     required: true,
